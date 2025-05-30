@@ -4,6 +4,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { NotificationModule } from './notifications/notification.module';
 import { NigerianVerificationModule } from './helpers/verification/nigerian-verification.module';
 import { AuthModule } from './auth/auth.module';
+import { UserModule } from './user/user.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { AuthModule } from './auth/auth.module';
     NotificationModule,
     NigerianVerificationModule,
     AuthModule,
+    UserModule,
   ],
 })
 export class AppModule {} 
