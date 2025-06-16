@@ -6,24 +6,33 @@ import {
   Patch,
   Param,
   Delete,
+  Req,
+  Res,
 } from '@nestjs/common';
 import { UserService } from './user.service';
+import { Request, Response } from 'express';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginClassDto } from './dto/login-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { VerifyTokenDto } from './dto/verify-token.dto';
 
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Post('login')
-  login(@Body() loginUserDto: LoginClassDto) {
-    return this.userService.login(loginUserDto);
+  login(@Body() loginUserDto: LoginClassDto, @Res() response: Response) {
+    return this.userService.login(loginUserDto, response);
   }
 
   @Post('register')
   register(@Body() createUserDto: CreateUserDto) {
     return this.userService.register(createUserDto);
+  }
+
+  @Post('verify_token')
+  verify_token(@Body() verifyTokenDto: VerifyTokenDto) {
+    return this.userService.verify_token(verifyTokenDto);
   }
 
   @Get()
@@ -32,7 +41,7 @@ export class UserController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id') id: string, @Req() request: Request) {
     return this.userService.findOne(+id);
   }
 

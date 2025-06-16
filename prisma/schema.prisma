@@ -9,8 +9,10 @@ generator client {
 }
 
 datasource db {
-  provider = "mongodb"
-  url      = env("DATABASE_URL")
+  provider     = "mongodb"
+  url          = env("DATABASE_URL")
+  directUrl    = env("DATABASE_URL") // Used for direct connection
+  relationMode = "prisma"
 }
 
 enum Role {
@@ -67,333 +69,346 @@ enum PaymentMethod {
 }
 
 model User {
-  id               String          @id @default(auto()) @map("_id") @db.ObjectId
-  email            String          @unique
-  password         String
-  firstName        String
-  lastName         String
-  phone            String
-  profilePicture   String?
-  address          String?
-  city             String?
-  state            String?
-  zip              String?
-  country          String?
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
-  role             Role            @default(USER)
-  status           UserStatus      @default(ACTIVE)
-  
+  id                      String     @id @default(auto()) @map("_id") @db.ObjectId
+  email                   String     @unique
+  password                String
+  firstName               String
+  lastName                String
+  phone                   String?    @unique
+  profilePicture          String?
+  address                 String?
+  city                    String?
+  state                   String?
+  zip                     String?
+  country                 String?
+  verificationCode        String?
+  verificationCodeExpires DateTime?
+  createdAt               DateTime   @default(now())
+  updatedAt               DateTime   @updatedAt
+  role                    Role       @default(USER)
+  status                  UserStatus @default(ACTIVE)
+
   // Metadata for flexible extensions
-  metadata         Json?
-  
+  metadata Json?
+
   // Relationships
-  vehicles         Vehicle[]
-  serviceRequests  ServiceRequest[] @relation("requestedBy")
-  driver           Driver?
-  reviews          Review[]         @relation("reviewedBy")
-  receivedReviews  Review[]         @relation("reviewOf")
-  payments         Payment[]
-  notifications    Notification[]
-  favoriteDrivers  FavoriteDriver[] @relation("userFavorites")
-  favoritedBy      FavoriteDriver[] @relation("driverFavorited")
+  vehicles          Vehicle[]
+  serviceRequests   ServiceRequest[]   @relation("requestedBy")
+  driver            Driver?
+  reviews           Review[]           @relation("reviewedBy")
+  receivedReviews   Review[]           @relation("reviewOf")
+  payments          Payment[]
+  notifications     Notification[]
+  favoriteDrivers   FavoriteDriver[]   @relation("userFavorites")
+  favoritedBy       FavoriteDriver[]   @relation("driverFavorited")
   emergencyContacts EmergencyContact[]
+  Session           Session[]
 }
 
 model Driver {
-  id                String          @id @default(auto()) @map("_id") @db.ObjectId
-  userId            String          @unique @db.ObjectId
-  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  licenseNumber     String
-  licenseExpiry     DateTime
-  isAvailable       Boolean         @default(false)
-  currentLocation   Location?
-  rating            Float?
-  completedServices Int             @default(0)
-  verificationStatus String         @default("PENDING")
-  
+  id                 String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId             String    @unique @db.ObjectId
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  licenseNumber      String
+  licenseExpiry      DateTime
+  isAvailable        Boolean   @default(false)
+  currentLocation    Location?
+  rating             Float?
+  completedServices  Int       @default(0)
+  verificationStatus String    @default("PENDING")
+
   // Documents and verification
-  identityVerified  Boolean         @default(false)
+  identityVerified      Boolean   @default(false)
   backgroundCheckStatus String?
-  insurancePolicy   String?
-  insuranceExpiry   DateTime?
-  
+  insurancePolicy       String?
+  insuranceExpiry       DateTime?
+
   // Service-related
-  serviceRadius     Float?          @default(20) // in kilometers
-  serviceFuelTypes  String[]        // Array of fuel types
-  
+  serviceRadius    Float?   @default(20) // in kilometers
+  serviceFuelTypes String[] // Array of fuel types
+
   // Flexible extensions
-  qualifications    String[]
-  metadata          Json?
-  
+  qualifications String[]
+  metadata       Json?
+
   // Relationships
-  serviceRequests   ServiceRequest[] @relation("assignedTo")
-  reviews           Review[]         @relation("reviewOf")
-  payments          Payment[]        @relation("receivedBy")
-  favoriteOf        FavoriteDriver[] @relation("userFavorites")
+  serviceRequests       ServiceRequest[]             @relation("assignedTo")
+  reviews               Review[]                     @relation("reviewOf")
+  payments              Payment[]                    @relation("receivedBy")
+  favoriteOf            FavoriteDriver[]             @relation("userFavorites")
   availabilitySchedules DriverAvailabilitySchedule[]
-  
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Vehicle {
-  id                String          @id @default(auto()) @map("_id") @db.ObjectId
-  userId            String          @db.ObjectId
-  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  nickname          String?
-  make              String
-  model             String
-  year              Int
-  color             String?
-  licensePlate      String?
-  vehicleType       VehicleType
-  fuelType          FuelType
-  
+  id           String      @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String      @db.ObjectId
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nickname     String?
+  make         String
+  model        String
+  year         Int
+  color        String?
+  licensePlate String?
+  vehicleType  VehicleType
+  fuelType     FuelType
+
   // Additional info for better service
-  tankCapacity      Float?           // in liters/gallons
-  fuelConsumption   Float?           // average consumption
-  
+  tankCapacity    Float? // in liters/gallons
+  fuelConsumption Float? // average consumption
+
   // Flexible extensions
-  specifications    Json?
-  metadata          Json?
-  
+  specifications Json?
+  metadata       Json?
+
   // Relationships
-  serviceRequests   ServiceRequest[]
-  
-  isDefault         Boolean         @default(false)
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+  serviceRequests ServiceRequest[]
+
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Location {
-  id                String          @id @default(auto()) @map("_id") @db.ObjectId
-  latitude          Float
-  longitude         Float
-  address           String?
-  city              String?
-  state             String?
-  zip               String?
-  country           String?
-  
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  latitude  Float
+  longitude Float
+  address   String?
+  city      String?
+  state     String?
+  zip       String?
+  country   String?
+
   // References
-  driverId          String?         @unique @db.ObjectId
-  driver            Driver?         @relation(fields: [driverId], references: [id])
-  
+  driverId String? @unique @db.ObjectId
+  driver   Driver? @relation(fields: [driverId], references: [id])
+
   // Service request locations
-  pickupRequests    ServiceRequest[] @relation("pickupLocation")
-  
-  updatedAt         DateTime        @updatedAt
+  pickupRequests ServiceRequest[] @relation("pickupLocation")
+
+  updatedAt DateTime @updatedAt
 }
 
 model ServiceRequest {
-  id                String              @id @default(auto()) @map("_id") @db.ObjectId
-  requesterId       String              @db.ObjectId
-  requester         User                @relation("requestedBy", fields: [requesterId], references: [id])
-  vehicleId         String              @db.ObjectId
-  vehicle           Vehicle             @relation(fields: [vehicleId], references: [id])
-  
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  requesterId String  @db.ObjectId
+  requester   User    @relation("requestedBy", fields: [requesterId], references: [id])
+  vehicleId   String  @db.ObjectId
+  vehicle     Vehicle @relation(fields: [vehicleId], references: [id])
+
   // Locations
-  pickupLocationId  String              @db.ObjectId
-  pickupLocation    Location            @relation("pickupLocation", fields: [pickupLocationId], references: [id])
-  
+  pickupLocationId String   @db.ObjectId
+  pickupLocation   Location @relation("pickupLocation", fields: [pickupLocationId], references: [id])
+
   // Driver assignment
-  driverId          String?             @db.ObjectId
-  driver            Driver?             @relation("assignedTo", fields: [driverId], references: [id])
-  
+  driverId String? @db.ObjectId
+  driver   Driver? @relation("assignedTo", fields: [driverId], references: [id])
+
   // Service details
-  status            ServiceRequestStatus @default(PENDING)
-  fuelType          FuelType
-  fuelAmount        Float                // in liters/gallons
-  fuelPrice         Float?               // unit price at the time of service
-  totalPrice        Float?
-  notes             String?
-  
+  status     ServiceRequestStatus @default(PENDING)
+  fuelType   FuelType
+  fuelAmount Float // in liters/gallons
+  fuelPrice  Float? // unit price at the time of service
+  totalPrice Float?
+  notes      String?
+
   // Scheduling
-  requestedAt       DateTime            @default(now())
-  scheduledFor      DateTime?           // For scheduled deliveries
-  acceptedAt        DateTime?
-  completedAt       DateTime?
-  cancelledAt       DateTime?
-  
+  requestedAt  DateTime  @default(now())
+  scheduledFor DateTime? // For scheduled deliveries
+  acceptedAt   DateTime?
+  completedAt  DateTime?
+  cancelledAt  DateTime?
+
   // Flexible extensions for future features
   additionalServices String[]
-  metadata          Json?
-  
+  metadata           Json?
+
   // Relationships
-  payment           Payment?
-  review            Review?
-  
-  updatedAt         DateTime            @updatedAt
+  payment Payment?
+  review  Review?
+
+  updatedAt DateTime @updatedAt
 }
 
 model Payment {
-  id                String          @id @default(auto()) @map("_id") @db.ObjectId
-  serviceRequestId  String?         @unique @db.ObjectId
-  serviceRequest    ServiceRequest? @relation(fields: [serviceRequestId], references: [id])
-  userId            String          @db.ObjectId
-  user              User            @relation(fields: [userId], references: [id])
-  driverId          String?         @db.ObjectId
-  driver            Driver?         @relation("receivedBy", fields: [driverId], references: [id])
-  
+  id               String          @id @default(auto()) @map("_id") @db.ObjectId
+  serviceRequestId String?         @unique @db.ObjectId
+  serviceRequest   ServiceRequest? @relation(fields: [serviceRequestId], references: [id])
+  userId           String          @db.ObjectId
+  user             User            @relation(fields: [userId], references: [id])
+  driverId         String?         @db.ObjectId
+  driver           Driver?         @relation("receivedBy", fields: [driverId], references: [id])
+
   // Payment details
-  amount            Float
-  currency          String          @default("USD")
-  status            PaymentStatus   @default(PENDING)
-  paymentMethod     PaymentMethod
-  
+  amount        Float
+  currency      String        @default("USD")
+  status        PaymentStatus @default(PENDING)
+  paymentMethod PaymentMethod
+
   // Transaction information
-  transactionId     String?
+  transactionId      String?
   paymentProviderRef String?
-  invoiceNumber     String?
-  
+  invoiceNumber      String?
+
   // Receipts and documentation
-  receiptUrl        String?
-  
+  receiptUrl String?
+
   // Flexible extensions for future payment methods
-  metadata          Json?
-  
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Review {
-  id                String          @id @default(auto()) @map("_id") @db.ObjectId
-  serviceRequestId  String?         @unique @db.ObjectId
-  serviceRequest    ServiceRequest? @relation(fields: [serviceRequestId], references: [id])
-  
+  id               String          @id @default(auto()) @map("_id") @db.ObjectId
+  serviceRequestId String?         @unique @db.ObjectId
+  serviceRequest   ServiceRequest? @relation(fields: [serviceRequestId], references: [id])
+
   // Reviewer (User)
-  reviewerId        String          @db.ObjectId
-  reviewer          User            @relation("reviewedBy", fields: [reviewerId], references: [id])
-  
+  reviewerId String @db.ObjectId
+  reviewer   User   @relation("reviewedBy", fields: [reviewerId], references: [id])
+
   // Reviewed Entity (Driver)
-  reviewedId        String          @db.ObjectId
-  reviewed          User            @relation("reviewOf", fields: [reviewedId], references: [id])
-  
+  reviewedId String @db.ObjectId
+  reviewed   User   @relation("reviewOf", fields: [reviewedId], references: [id])
+
   // Driver relation
-  driverId          String?         @db.ObjectId
-  driver            Driver?         @relation("reviewOf", fields: [driverId], references: [id])
-  
+  driverId String? @db.ObjectId
+  driver   Driver? @relation("reviewOf", fields: [driverId], references: [id])
+
   // Review details
-  rating            Float           // 1-5 star rating
-  comment           String?
-  
+  rating  Float // 1-5 star rating
+  comment String?
+
   // Flexible categorization for detailed reviews
-  categoryRatings   Json?           // E.g. {promptness: 4, professionalism: 5}
-  
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+  categoryRatings Json? // E.g. {promptness: 4, professionalism: 5}
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Notification {
-  id                String          @id @default(auto()) @map("_id") @db.ObjectId
-  userId            String          @db.ObjectId
-  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   // Notification details
-  type              String          // e.g., "SERVICE_REQUEST", "PAYMENT", "SYSTEM"
-  title             String
-  message           String
-  isRead            Boolean         @default(false)
-  
+  type    String // e.g., "SERVICE_REQUEST", "PAYMENT", "SYSTEM"
+  title   String
+  message String
+  isRead  Boolean @default(false)
+
   // For deep linking within the app
-  actionUrl         String?
-  
+  actionUrl String?
+
   // For flexible notification data
-  metadata          Json?
-  
-  createdAt         DateTime        @default(now())
+  metadata Json?
+
+  createdAt DateTime @default(now())
 }
 
 model FavoriteDriver {
-  id                String          @id @default(auto()) @map("_id") @db.ObjectId
-  
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
   // The user who favorited
-  userId            String          @db.ObjectId
-  user              User            @relation("userFavorites", fields: [userId], references: [id], onDelete: Cascade)
-  
+  userId String @db.ObjectId
+  user   User   @relation("userFavorites", fields: [userId], references: [id], onDelete: Cascade)
+
   // The favorited driver (via user ID)
-  favoritedUserId   String          @db.ObjectId
-  favoritedUser     User            @relation("driverFavorited", fields: [favoritedUserId], references: [id], onDelete: Cascade)
-  
+  favoritedUserId String @db.ObjectId
+  favoritedUser   User   @relation("driverFavorited", fields: [favoritedUserId], references: [id], onDelete: Cascade)
+
   // The driver record
-  driverId          String          @db.ObjectId
-  driver            Driver          @relation("userFavorites", fields: [driverId], references: [id], onDelete: Cascade)
-  
-  notes             String?
-  createdAt         DateTime        @default(now())
-  
+  driverId String @db.ObjectId
+  driver   Driver @relation("userFavorites", fields: [driverId], references: [id], onDelete: Cascade)
+
+  notes     String?
+  createdAt DateTime @default(now())
+
   @@unique([userId, driverId])
 }
 
 model EmergencyContact {
-  id                String          @id @default(auto()) @map("_id") @db.ObjectId
-  userId            String          @db.ObjectId
-  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  name              String
-  phone             String
-  relationship      String?
-  isEmergencyContact Boolean        @default(true)
-  
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name               String
+  phone              String
+  relationship       String?
+  isEmergencyContact Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model AppSettings {
-  id                String          @id @default(auto()) @map("_id") @db.ObjectId
-  key               String          @unique
-  value             Json
-  description       String?
-  isPublic          Boolean         @default(false)
-  
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  key         String  @unique
+  value       Json
+  description String?
+  isPublic    Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model DriverAvailabilitySchedule {
-  id                String          @id @default(auto()) @map("_id") @db.ObjectId
-  driverId          String          @db.ObjectId
-  driver            Driver          @relation(fields: [driverId], references: [id], onDelete: Cascade)
-  
-  dayOfWeek         Int             // 0-6 (Sunday-Saturday)
-  startTime         String          // Format: "HH:MM"
-  endTime           String          // Format: "HH:MM"
-  isAvailable       Boolean         @default(true)
-  
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
-  
+  id       String @id @default(auto()) @map("_id") @db.ObjectId
+  driverId String @db.ObjectId
+  driver   Driver @relation(fields: [driverId], references: [id], onDelete: Cascade)
+
+  dayOfWeek   Int // 0-6 (Sunday-Saturday)
+  startTime   String // Format: "HH:MM"
+  endTime     String // Format: "HH:MM"
+  isAvailable Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@unique([driverId, dayOfWeek, startTime, endTime])
 }
 
 model PriceConfiguration {
-  id                String          @id @default(auto()) @map("_id") @db.ObjectId
-  fuelType          FuelType
-  basePrice         Float           // Base price per unit (liter/gallon)
-  
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  fuelType  FuelType
+  basePrice Float // Base price per unit (liter/gallon)
+
   // Dynamic pricing factors
-  serviceFee        Float           @default(0)
-  distanceFee       Float?          // Fee per km/mile
-  urgencyFee        Float?          // Additional fee for urgent requests
-  
+  serviceFee  Float  @default(0)
+  distanceFee Float? // Fee per km/mile
+  urgencyFee  Float? // Additional fee for urgent requests
+
   // Discounts
-  discountThreshold Float?          // Threshold for volume discount
-  discountRate      Float?          // Discount percentage
-  
+  discountThreshold Float? // Threshold for volume discount
+  discountRate      Float? // Discount percentage
+
   // Time-based pricing
   peakHourSurcharge Float?
   peakStartHour     Int?
   peakEndHour       Int?
-  
+
   // Flexible extension
-  metadata          Json?
-  
-  isActive          Boolean         @default(true)
-  effectiveFrom     DateTime        @default(now())
-  effectiveTo       DateTime?
-  
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+  metadata Json?
+
+  isActive      Boolean   @default(true)
+  effectiveFrom DateTime  @default(now())
+  effectiveTo   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
+model Session {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String   @db.ObjectId
+  expires    DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([id, userId])
+}
