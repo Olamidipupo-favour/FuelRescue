@@ -20,7 +20,7 @@ export async function sendMessage(to: string, subject: string, token: string) {
             <h2 style="color: #333; text-align: center;">Two-Factor Authentication Setup</h2>
             <div style="background-color: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0;">
               <p style="color: #666; margin-bottom: 15px;">Your verification code is:</p>
-              <div style="background-color: #fff; padding: 15px; border-radius: 4px; text-align: center; font-size: 24px; letter-spacing: 5px; font-weight: bold; color: #333;">
+              <div style="background-er-radius: 4px; text-align: center; font-size: 24px; letter-spacing: 5px; font-weight: bold; color: #333;">
                 ${token}
               </div>
             </div>

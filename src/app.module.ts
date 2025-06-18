@@ -1,10 +1,13 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { BullModule } from '@nestjs/bullmq';
+import { FuelModule } from './fuel/fuel.module';
+import { AuthModule } from './auth/auth.module';
+import { UserModule } from './user/user.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { NotificationModule } from './notifications/notification.module';
 import { NigerianVerificationModule } from './helpers/verification/nigerian-verification.module';
-import { AuthModule } from './auth/auth.module';
-import { UserModule } from './user/user.module';
+
 
 @Module({
   imports: [
@@ -19,11 +22,19 @@ import { UserModule } from './user/user.module';
       //   DATABASE_URL: Joi.string().required(),
       // }),
     }),
+    BullModule.forRoot({
+      connection: {
+        host: 'localhost',
+        port: 6379,
+      },
+      
+    }),
     PrismaModule,
     NotificationModule,
     NigerianVerificationModule,
     AuthModule,
     UserModule,
+    FuelModule,
   ],
 })
 export class AppModule {} 

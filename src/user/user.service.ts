@@ -63,18 +63,19 @@ export class UserService {
           verificationCodeExpires: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes
         },
       });
-
+      response.setHeader('Location', '/verify-token');
       return {
-        message: 'Verification code sent to your phone',
+        message: 'Verification code sent to your email',
         user: user,
         verificationCode,
       };
     }
     const expiredAt = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
-    const { id, expires } = await createSession(user.id, expiredAt);
+    const userId = user.id;
+    const { id, expires } = await createSession(userId, expiredAt);
     response.cookie(
       'sessionId',
-      { id, expires },
+      { id, expires, userId },
       {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
@@ -98,18 +99,21 @@ export class UserService {
     return { message: 'User created successfully', user };
   }
 
-  async verify_token(verifyTokenDto: VerifyTokenDto) {
+  async verify_token(verifyTokenDto: VerifyTokenDto, response: Response) {
     const { userId, token } = verifyTokenDto;
     const user = await this.prisma.user.findUnique({
       where: {
         id: userId,
+        verificationCodeExpires: {
+          gt: new Date(Date.now()),
+        },
       },
       select: {
         verificationCode: true,
       },
     });
     if (!user?.verificationCode) {
-      return { message: 'Verification code not found', isValid: false };
+      return { message: 'Verification code has expired', isValid: false };
     }
     const { verificationCode } = user;
     const isValid = await verifyToken({ token, secret: verificationCode });
@@ -121,9 +125,20 @@ export class UserService {
           verificationCodeExpires: null,
         },
       });
-      await createSession(
+      const { id, expires } = await createSession(
         userId,
         new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
+      );
+
+      response.cookie(
+        'sessionId',
+        { id, expires, userId },
+        {
+          httpOnly: true,
+          maxAge: 2 * 24 * 60 * 60 * 1000,
+          sameSite: 'strict',
+          secure: process.env.NODE_ENV === 'production',
+        },
       );
     }
     return { message: 'Verification code is valid', isValid };

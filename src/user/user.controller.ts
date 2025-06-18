@@ -10,7 +10,7 @@ import {
   Res,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { Request, Response } from 'express';
+import { Request, response, Response } from 'express';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginClassDto } from './dto/login-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -21,7 +21,7 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Post('login')
-  login(@Body() loginUserDto: LoginClassDto, @Res() response: Response) {
+  login(@Body() loginUserDto: LoginClassDto, @Res({passthrough: true}) response: Response) {
     return this.userService.login(loginUserDto, response);
   }
 
@@ -31,8 +31,8 @@ export class UserController {
   }
 
   @Post('verify_token')
-  verify_token(@Body() verifyTokenDto: VerifyTokenDto) {
-    return this.userService.verify_token(verifyTokenDto);
+  verify_token(@Body() verifyTokenDto: VerifyTokenDto, @Res({passthrough: true}) response: Response) {
+    return this.userService.verify_token(verifyTokenDto, response);
   }
 
   @Get()
