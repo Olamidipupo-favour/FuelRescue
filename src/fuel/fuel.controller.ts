@@ -44,6 +44,11 @@ export class FuelController {
     return this.fuelService.checkDelivery(orderId);
   }
 
+  @Get('orders/:orderId/status')
+  trackOrder(@Param('orderId') orderId: string) {
+    return this.fuelService.checkDelivery(orderId);
+  }
+
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateFuelDto: UpdateFuelDto) {
     return this.fuelService.update(+id, updateFuelDto);

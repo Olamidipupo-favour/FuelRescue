@@ -1,5 +1,5 @@
 import { FuelType , DeliveryMode} from "@prisma/client";
-import { IsString, IsNumber, IsEnum, isEnum } from "class-validator";
+import { IsString, IsNumber, IsEnum } from "class-validator";
 
 export class priceConfigDto {
   @IsString()

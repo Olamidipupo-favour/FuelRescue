@@ -1,16 +1,22 @@
+import { Queue } from 'bullmq';
+import { Utils } from './lib/utils';
 import { Order } from '@prisma/client';
 import { FuelType } from '@prisma/client';
 import { Injectable } from '@nestjs/common';
-import { determinePrice } from './lib/utils';
-import { queueJob } from './lib/cronjobs/queqe-fuel-order';
-import { CreateOrderDto } from './dto/create-fuel.dto';
+import { InjectQueue } from '@nestjs/bullmq';
 import { UpdateFuelDto } from './dto/update-fuel.dto';
+import { CreateOrderDto } from './dto/create-fuel.dto';
 import { priceConfigDto } from './dto/price-config.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class FuelService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly utils: Utils,
+    @InjectQueue('fuel-queue') private fuelQueue: Queue,
+  ) {}
+
   create(createFuelDto: CreateOrderDto) {
     return 'This action adds a new fuel';
   }
@@ -45,7 +51,7 @@ export class FuelService {
       discountThreshold,
     } = priceConfig;
 
-    const totalPrice = determinePrice({
+    const totalPrice = this.utils.determinePrice({
       basePrice,
       discountRate,
       quantity,
@@ -73,9 +79,18 @@ export class FuelService {
     return orders;
   }
 
+  async queueJob(order: Order) {
+    const { id, scheduledFor } = order;
+    const delay = scheduledFor
+      ? scheduledFor.getTime() - Date.now() - 30 * 60 * 1000
+      : 0;
+
+    return this.fuelQueue.add(`delivery`, { order }, { delay });
+  }
+
   async makeOrder(userId: string, createOrderDto: CreateOrderDto) {
     const { items, ...rest } = createOrderDto;
-    const {scheduledFor} = rest
+    const { scheduledFor } = rest;
     const order = await this.prisma.order.create({
       data: {
         ...rest,
@@ -87,8 +102,8 @@ export class FuelService {
         },
       },
     });
-    if (scheduledFor && scheduledFor > new Date()){
-      await queueJob({jobName:'createDelivery', order})
+    if (scheduledFor && scheduledFor > new Date()) {
+        await this.queueJob(order);
     }
     return order;
   }
@@ -100,7 +115,7 @@ export class FuelService {
         deliveryMode: 'EMERGENCY',
       },
       data: {
-        urgencyFee: 75
+        urgencyFee: 75,
       },
     });
   }
@@ -115,10 +130,9 @@ export class FuelService {
         items: true,
       },
     });
-    if (!order) return
-    const {scheduledFor} = order;
+    if (!order) return;
+    const { scheduledFor } = order;
     if (scheduledFor && scheduledFor < new Date()) {
-
     }
   }
 

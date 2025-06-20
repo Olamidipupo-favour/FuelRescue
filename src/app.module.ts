@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { BullModule } from '@nestjs/bullmq';
 import { FuelModule } from './fuel/fuel.module';
 import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
@@ -21,13 +20,6 @@ import { NigerianVerificationModule } from './helpers/verification/nigerian-veri
       //   PORT: Joi.number().default(3000),
       //   DATABASE_URL: Joi.string().required(),
       // }),
-    }),
-    BullModule.forRoot({
-      connection: {
-        host: 'localhost',
-        port: 6379,
-      },
-      
     }),
     PrismaModule,
     NotificationModule,

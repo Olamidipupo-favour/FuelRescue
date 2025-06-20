@@ -1,4 +1,3 @@
-import cookie from 'cookie';
 import * as bcrypt from 'bcryptjs';
 import { Response } from 'express';
 import { User } from '@prisma/client';

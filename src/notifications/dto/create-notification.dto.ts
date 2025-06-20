@@ -16,6 +16,8 @@ export class CreateNotificationDto {
   @IsString()
   type: string;
 
+  
+
   /**
    * The notification title
    */
