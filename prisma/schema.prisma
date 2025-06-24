@@ -83,10 +83,13 @@ model User {
   country                 String?
   verificationCode        String?
   verificationCodeExpires DateTime?
+  repaymentOnTime         Boolean    @default(true)
+  kycVerified             Boolean    @default(true)
   createdAt               DateTime   @default(now())
   updatedAt               DateTime   @updatedAt
   role                    Role       @default(USER)
   status                  UserStatus @default(ACTIVE)
+
 
   // Metadata for flexible extensions
   metadata Json?
@@ -217,7 +220,7 @@ model ServiceRequest {
   totalPrice Float?
   notes      String?
 
-  // Scheduling
+  // Schedulingdjvpn
   requestedAt  DateTime  @default(now())
   scheduledFor DateTime? // For scheduled deliveries
   acceptedAt   DateTime?

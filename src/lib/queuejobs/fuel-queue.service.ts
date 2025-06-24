@@ -1,11 +1,5 @@
-import { Queue } from 'bullmq';
 import { Order } from '@prisma/client';
-import {
-  Processor,
-  WorkerHost,
-  OnWorkerEvent,
-  InjectQueue,
-} from '@nestjs/bullmq';
+import { Processor, WorkerHost, OnWorkerEvent } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { Dispatch } from '../dispatch';
 import { Utils } from '../utils';
@@ -31,12 +25,21 @@ export class FuelOrderProcessor extends WorkerHost {
         const data = job.data.order;
         const { id } = data;
         //Assign driver
-          const driverId = '';
+        const driverId = '';
         //Generate message
-        const message = await this.utils.generateOrderSummary(id);
+        const response = await this.utils.generateOrderSummary(id);
         // Process the job here
-        this.notify.notifyDriver(data, driverId, message);
-        this.notify.notifyCustomer(data, message);
+        try {
+          await this.notify.notifyDriver(data, driverId, response.message);
+        } catch (error) {
+          console.error(`Failed to notify driver: ${error}`);
+        }
+
+        try {
+          await this.notify.notifyCustomer(data, response.message);
+        } catch (error) {
+          console.error('Failed to notify customer:', error);
+        }
       }
     }
 

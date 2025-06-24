@@ -49,13 +49,5 @@ export class FuelController {
     return this.fuelService.checkDelivery(orderId);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateFuelDto: UpdateFuelDto) {
-    return this.fuelService.update(+id, updateFuelDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.fuelService.remove(+id);
-  }
 }
+  

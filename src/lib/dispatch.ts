@@ -1,10 +1,11 @@
-import { Order } from '@prisma/client';
 import axios from 'axios';
-
+import { Order } from '@prisma/client';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
+
+@Injectable()
 export class Dispatch {
   constructor(private readonly prisma: PrismaService) {}
-
   async notifyDriver(data: Order, driverId: string, message: string) {
     // Fetch the driver user
     const driver = await this.prisma.driver.findUnique({
@@ -34,9 +35,13 @@ export class Dispatch {
       sendSMS: true,
       sendPush: true,
     };
-    await axios.post('http://localhost:3000/notifications', payload, {
-      withCredentials: true,
-    });
+    try {
+      await axios.post('http://localhost:3000/notifications', payload, {
+        withCredentials: true,
+      });
+    } catch (error) {
+      console.error(`Error sending notification to driver: ${error}`);
+    }
   }
 
   async notifyCustomer(data: Order, message: string) {
@@ -65,12 +70,15 @@ export class Dispatch {
       sendSMS: true,
       sendPush: true,
     };
-    await axios.post('http://localhost:3000/notifications', payload, {
-      withCredentials: true,
-    });
+
+    try {
+      await axios.post('http://localhost:3000/notifications', payload, {
+        withCredentials: true,
+      });
+    } catch (error) {
+      console.error(`Error sending notification to customer: ${error}`);
+    }
   }
 
-  async triggerTracking(){
-    
-  }
+  async triggerTracking() {}
 }

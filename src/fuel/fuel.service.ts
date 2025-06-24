@@ -1,5 +1,5 @@
 import { Queue } from 'bullmq';
-import { Utils } from './lib/utils';
+import { Utils } from '../lib/utils';
 import { Order } from '@prisma/client';
 import { FuelType } from '@prisma/client';
 import { Injectable } from '@nestjs/common';
@@ -88,6 +88,10 @@ export class FuelService {
     return this.fuelQueue.add(`delivery`, { order }, { delay });
   }
 
+  async test(userId:string){
+
+  }
+
   async makeOrder(userId: string, createOrderDto: CreateOrderDto) {
     const { items, ...rest } = createOrderDto;
     const { scheduledFor } = rest;
@@ -103,22 +107,11 @@ export class FuelService {
       },
     });
     if (scheduledFor && scheduledFor > new Date()) {
-        await this.queueJob(order);
+      await this.queueJob(order);
     }
     return order;
   }
 
-  async test(userId: string) {
-    await this.prisma.priceConfiguration.updateMany({
-      where: {
-        fuelType: 'GASOLINE',
-        deliveryMode: 'EMERGENCY',
-      },
-      data: {
-        urgencyFee: 75,
-      },
-    });
-  }
 
   async checkDelivery(id: string) {
     console.log('Checking delivery');
@@ -136,11 +129,4 @@ export class FuelService {
     }
   }
 
-  update(id: number, updateFuelDto: UpdateFuelDto) {
-    return `This action updates a #${id} fuel`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} fuel`;
-  }
 }

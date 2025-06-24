@@ -1,10 +1,16 @@
-import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { FuelModule } from './fuel/fuel.module';
 import { AuthModule } from './auth/auth.module';
-import { UserModule } from './user/user.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { EventModule } from './event/event.module';
+import { CreditModule } from './credit/credit.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { CronModule } from './lib/cronjobs/cron.module';
+import { PaymentModule } from './payment/payment.module';
+import { QueueModule } from './lib/queuejobs/queue.module';
+import { LoggerMiddleware } from './lib/logger.middleware';
 import { NotificationModule } from './notifications/notification.module';
+import { Module, NestModule , MiddlewareConsumer, RequestMethod} from '@nestjs/common';
 import { NigerianVerificationModule } from './helpers/verification/nigerian-verification.module';
 
 
@@ -21,12 +27,23 @@ import { NigerianVerificationModule } from './helpers/verification/nigerian-veri
       //   DATABASE_URL: Joi.string().required(),
       // }),
     }),
-    PrismaModule,
-    NotificationModule,
-    NigerianVerificationModule,
     AuthModule,
-    UserModule,
     FuelModule,
+    CronModule,
+    QueueModule,
+    EventModule,
+    PrismaModule,
+    PaymentModule,
+    NotificationModule,
+    ScheduleModule.forRoot(),
+    NigerianVerificationModule,
+    CreditModule,
   ],
 })
-export class AppModule {} 
+export class AppModule  implements NestModule{
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(LoggerMiddleware)
+      .forRoutes({path: '*', method: RequestMethod.ALL});
+  }
+} 

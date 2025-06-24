@@ -1,12 +1,14 @@
 import { Module } from '@nestjs/common';
 import { FuelService } from './fuel.service';
 import { FuelController } from './fuel.controller';
+import { EventModule } from 'src/event/event.module';
 import { BullModule } from '@nestjs/bullmq';
-import { Utils } from './lib/utils';
-import { Dispatch } from './lib/dispatch';
+import { Utils } from '../lib/utils';
+import { Dispatch } from '../lib/dispatch';
 
 @Module({
   imports: [
+    EventModule,
     BullModule.forRoot({
       connection: {
         // host: process.env.REDIS_HOST,
